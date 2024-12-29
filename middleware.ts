@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
 
 import type { NextRequest } from "next/server";
-import Cors from "cors";
 
-const cors = Cors({
-  methods: ["GET"],
-});
 
 export function middleware(req: NextRequest) {
   const url = req.nextUrl;
