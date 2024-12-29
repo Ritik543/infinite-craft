@@ -59,10 +59,10 @@ const Sidebar: React.FC<SidebarProps> = ({
     <div
       className={`fixed bg-white shadow-md border-gray-300
                     lg:w-80 lg:h-full lg:top-0 lg:right-0 
-                    w-full h-auto bottom-0 border-t z-50 
-                    transition-all`}
+                    w-full h-1/2 bottom-0 border-t z-50 
+                    transition-all overflow-y-scroll lg:overflow-none`}
     >
-      <div className="p-4 flex flex-col h-full">
+      <div className="p-4 flex flex-col h-full ">
         {/* Header */}
         <h2 className="text-lg font-bold mb-4">Infinite Craft</h2>
 
