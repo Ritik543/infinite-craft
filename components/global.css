@@ -1,0 +1,22 @@
+.glow-effect::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fbc2eb, #a18cd1);
+  z-index: -1;
+  border-radius: 12px;
+  animation: glow 1.5s infinite alternate;
+  filter: blur(8px);
+}
+
+@keyframes glow {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
