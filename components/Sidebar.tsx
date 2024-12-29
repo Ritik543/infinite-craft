@@ -1,9 +1,29 @@
 import React, { useState, useEffect } from "react";
 import ElementCardNonDraggable from "./ElementCardNonDraggable";
 
-const Sidebar = ({ elements, deleteMode, markedForDeletion, handleClick }) => {
-  const [sortedElements, setSortedElements] = useState(elements);
-  const [currentSort, setCurrentSort] = useState("time"); // Initial sorting by "time"
+interface Element {
+  name: string;
+  emoji: string;
+  time?: string; // Assuming `time` is optional or present in the elements
+}
+
+interface SidebarProps {
+  elements: Element[];
+  deleteMode: boolean;
+  markedForDeletion: string[];
+  handleClick: (elementName: string) => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({
+  elements,
+  deleteMode,
+  markedForDeletion,
+  handleClick,
+}) => {
+  const [sortedElements, setSortedElements] = useState<Element[]>(elements);
+  const [currentSort, setCurrentSort] = useState<"time" | "name" | "emoji">(
+    "time"
+  );
 
   // Update sortedElements whenever the elements prop changes
   useEffect(() => {
@@ -11,8 +31,8 @@ const Sidebar = ({ elements, deleteMode, markedForDeletion, handleClick }) => {
   }, [elements]);
 
   const toggleSorting = () => {
-    let nextSort;
-    let sorted;
+    let nextSort: "time" | "name" | "emoji";
+    let sorted: Element[];
 
     if (currentSort === "time") {
       nextSort = "name";
@@ -31,12 +51,8 @@ const Sidebar = ({ elements, deleteMode, markedForDeletion, handleClick }) => {
     setSortedElements(sorted);
   };
 
-  const handleElementClick = (elementName) => {
-    if (deleteMode) {
-      handleClick(elementName); // Handles marking/unmarking for deletion
-    } else {
-      handleClick(elementName); // Handles normal element click
-    }
+  const handleElementClick = (elementName: string) => {
+    handleClick(elementName);
   };
 
   return (
