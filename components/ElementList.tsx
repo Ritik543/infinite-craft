@@ -7,11 +7,13 @@ import { twMerge } from "tailwind-merge";
 const ElementList = () => {
   const [selectedElements, setSelectedElements] = useState<string[]>([]);
   const [elements, setElements] = useState(Elements); // Sidebar elements
-  const [elementList, setElementList] = useState(elements); // Main ElementList
+  // const [elementList, setElementList] = useState(elements);
+  const [elementList, setElementList] =
+    useState<{ name: string; emoji: string; isNew?: boolean }[]>(Elements);
+
   const [deleteMode, setDeleteMode] = useState(false); // Toggle for delete mode
   const [markedForDeletion, setMarkedForDeletion] = useState<string[]>([]); // Cards marked for deletion
   const [draggedElement, setDraggedElement] = useState<string | null>(null);
-  const [error, setError] = useState(false);
   const popSound = useRef<HTMLAudioElement | null>(null);
   const [showAboutModal, setShowAboutModal] = useState(false); // State for About Modal
 
@@ -72,12 +74,6 @@ const ElementList = () => {
 
       const newElement = response.data;
 
-      if (!newElement) {
-        setError(true);
-        setTimeout(() => setError(false), 3000);
-        return;
-      }
-
       const existsInSidebar = elements.some(
         (el) => el.name === newElement.name
       );
@@ -94,16 +90,16 @@ const ElementList = () => {
       }
 
       if (!existsInElementList) {
-        setElementList(
-          (prev) =>
-            prev
-              .filter((el) => !selectedElements.includes(el.name)) // Remove combined elements from the elementList
-              .concat({
-                name: newElement.name,
-                emoji: newElement.emoji,
-                isNew: true,
-              }) // Add the new element
-        );
+        setElementList((prev) => {
+          // Remove combined elements from elementList and add the new element
+          return prev
+            .filter((el) => !selectedElements.includes(el.name)) // Filter out the selected elements
+            .concat({
+              name: newElement.name,
+              emoji: newElement.emoji,
+              isNew: true, // Add the new element
+            });
+        });
       }
 
       if (popSound.current) {
@@ -134,8 +130,6 @@ const ElementList = () => {
       }, 3000);
     } catch (error) {
       console.error("Error combining elements:", error);
-      setError(true);
-      setTimeout(() => setError(false), 3000);
     }
   };
 
@@ -264,15 +258,6 @@ const ElementList = () => {
               Close
             </button>
           </div>
-        </div>
-      )}
-
-      {error && (
-        <div
-          role="alert"
-          className="alert alert-error absolute bottom-4 left-1/2 transform -translate-x-1/2 max-w-md text-center"
-        >
-          <span>Error! Something went wrong when combining elements.</span>
         </div>
       )}
     </div>
