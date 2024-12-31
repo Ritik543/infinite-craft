@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import ElementCardNonDraggable from "./ElementCardNonDraggable";
 
 interface Element {
   name: string;
@@ -55,6 +54,10 @@ const Sidebar: React.FC<SidebarProps> = ({
     handleClick(elementName);
   };
 
+  const handleDragStart = (elementName: string) => {
+    handleClick(elementName); // Select the element for drag-and-drop
+  };
+
   return (
     <div
       className={`fixed bg-white shadow-md border-gray-300
@@ -62,7 +65,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     w-full h-1/2 bottom-0 border-t z-50 
                     transition-all overflow-y-scroll lg:overflow-none`}
     >
-      <div className="p-4 flex flex-col h-full ">
+      <div className="p-4 flex flex-col h-full">
         {/* Header */}
         <h2 className="text-lg font-bold mb-4">Infinite Craft</h2>
 
@@ -77,7 +80,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                     ? "opacity-50 bg-red-100" // Highlight marked cards in delete mode
                     : ""
                 }`}
+                draggable
                 onClick={() => handleElementClick(element.name)}
+                onDragStart={() => handleDragStart(element.name)}
               >
                 {deleteMode && (
                   <button
