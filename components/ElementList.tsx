@@ -65,75 +65,65 @@ const ElementList = () => {
         return;
       }
 
-      const exists = elements.some((el) => el.name === newElement.name);
-      if (!exists) {
+      const existsInSidebar = elements.some(
+        (el) => el.name === newElement.name
+      );
+      const existsInElementList = elementList.some(
+        (el) => el.name === newElement.name
+      );
+
+      // Add the new card to both Sidebar and ElementList if not already present
+      if (!existsInSidebar) {
         setElements((prev) => [
           ...prev,
           { name: newElement.name, emoji: newElement.emoji, isNew: true },
         ]);
-        setElementList((prev) => [
-          ...prev,
-          { name: newElement.name, emoji: newElement.emoji, isNew: true },
-        ]);
-
-        if (popSound.current) {
-          popSound.current.play();
-        }
-
-        localStorage.setItem(
-          "elements",
-          JSON.stringify([
-            ...elements,
-            { name: newElement.name, emoji: newElement.emoji },
-          ])
-        );
-
-        setTimeout(() => {
-          setElements((prev) =>
-            prev.map((el) =>
-              el.name === newElement.name ? { ...el, isNew: false } : el
-            )
-          );
-          setElementList((prev) =>
-            prev.map((el) =>
-              el.name === newElement.name ? { ...el, isNew: false } : el
-            )
-          );
-        }, 3000);
       }
 
-      setSelectedElements([]);
+      if (!existsInElementList) {
+        setElementList(
+          (prev) =>
+            prev
+              .filter((el) => !selectedElements.includes(el.name)) // Remove combined elements from the elementList
+              .concat({
+                name: newElement.name,
+                emoji: newElement.emoji,
+                isNew: true,
+              }) // Add the new element
+        );
+      }
+
+      if (popSound.current) {
+        popSound.current.play();
+      }
+
+      // Save updated elements to localStorage
+      localStorage.setItem(
+        "elements",
+        JSON.stringify([
+          ...elements,
+          { name: newElement.name, emoji: newElement.emoji },
+        ])
+      );
+
+      // Remove the "isNew" flag after a delay
+      setTimeout(() => {
+        setElements((prev) =>
+          prev.map((el) =>
+            el.name === newElement.name ? { ...el, isNew: false } : el
+          )
+        );
+        setElementList((prev) =>
+          prev.map((el) =>
+            el.name === newElement.name ? { ...el, isNew: false } : el
+          )
+        );
+      }, 3000);
     } catch (error) {
       console.error("Error combining elements:", error);
       setError(true);
       setTimeout(() => setError(false), 3000);
     }
-  };
-
-  const toggleDeleteMode = () => {
-    if (deleteMode) {
-      const remainingElements = elementList.filter(
-        (el) => !markedForDeletion.includes(el.name)
-      );
-      const remainingSidebarElements = elements.filter(
-        (el) => !markedForDeletion.includes(el.name)
-      );
-
-      setElementList(remainingElements);
-      setElements(remainingSidebarElements);
-      setMarkedForDeletion([]);
-    }
-    setDeleteMode(!deleteMode);
-  };
-
-  const deleteCraftCards = () => {
-    setElementList([]);
-  };
-
-  const clearElements = () => {
-    setElements(Elements);
-    setElementList(Elements);
-    localStorage.setItem("elements", JSON.stringify(Elements));
   };
 
   useEffect(() => {
@@ -164,7 +154,10 @@ const ElementList = () => {
               onDragStart={() => handleDragStart(element.name)}
               onDragOver={handleDragOver}
               onDrop={() => handleDrop(element.name)}
-              onClick={() => handleClick(element.name)}
+              onClick={(e) => {
+                e.preventDefault(); // Prevent dragging conflict
+                handleClick(element.name);
+              }}
             >
               {deleteMode && (
                 <button
@@ -200,10 +193,14 @@ const ElementList = () => {
       </div>
 
       {/* Sticky Footer Overlay */}
-      <div className="fixed bottom-0 left-0 w-full lg:w-[80vw] bg-white shadow-md py-3 px-4 flex gap-4 justify-between items-center z-50">
+      <div className="fixed bottom-0 left-0 w-[90vw] lg:w-[80vw] bg-white shadow-md py-3 px-4 flex gap-4 justify-between items-center z-50">
         <button
           className="btn btn-ghost bg-gray-200 px-4 py-2 rounded shadow hover:bg-gray-300"
-          onClick={clearElements}
+          onClick={() => {
+            setElements(Elements);
+            setElementList(Elements);
+            localStorage.setItem("elements", JSON.stringify(Elements));
+          }}
         >
           Reset
         </button>
@@ -213,13 +210,23 @@ const ElementList = () => {
               ? "bg-red-500 text-white hover:bg-red-600"
               : "bg-blue-500 text-white hover:bg-blue-600"
           }`}
-          onClick={toggleDeleteMode}
+          onClick={() => {
+            setDeleteMode((prev) => !prev);
+            if (deleteMode) {
+              const remainingElements = elementList.filter(
+                (el) => !markedForDeletion.includes(el.name)
+              );
+              setElementList(remainingElements);
+              setElements(elements); // Preserve sidebar elements
+              setMarkedForDeletion([]);
+            }
+          }}
         >
           {deleteMode ? "Confirm Delete" : "Delete"}
         </button>
         <button
           className="btn bg-red-500 text-white hover:bg-red-600 px-4 py-2 rounded shadow"
-          onClick={deleteCraftCards}
+          onClick={() => setElementList([])}
         >
           Delete Craft
         </button>
