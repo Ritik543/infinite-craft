@@ -200,7 +200,7 @@ const ElementList = () => {
       </div>
 
       {/* Sticky Footer Overlay */}
-      <div className="fixed bottom-0 left-0 w-full bg-white shadow-md py-3 px-4 flex gap-4 justify-between items-center z-50">
+      <div className="fixed bottom-0 left-0 w-[80vw] bg-white shadow-md py-3 px-4 flex gap-4 justify-between items-center z-50">
         <button
           className="btn btn-ghost bg-gray-200 px-4 py-2 rounded shadow hover:bg-gray-300"
           onClick={clearElements}
