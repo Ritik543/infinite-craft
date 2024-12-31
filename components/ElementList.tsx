@@ -10,30 +10,108 @@ const ElementList = () => {
   const [elementList, setElementList] = useState(elements); // Main ElementList
   const [deleteMode, setDeleteMode] = useState(false); // Toggle for delete mode
   const [markedForDeletion, setMarkedForDeletion] = useState<string[]>([]); // Cards marked for deletion
+  const [draggedElement, setDraggedElement] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const popSound = useRef<HTMLAudioElement | null>(null);
+  const [showAboutModal, setShowAboutModal] = useState(false); // State for About Modal
 
-  const handleClick = (element: string) => {
+  const handleClick = async (element: string) => {
     if (deleteMode) {
-      // Mark card for deletion
       setMarkedForDeletion((prev) =>
         prev.includes(element)
           ? prev.filter((name) => name !== element)
           : [...prev, element]
       );
     } else {
-      // Handle element selection for combining
-      if (selectedElements.length === 2) {
-        setSelectedElements([element]);
+      if (selectedElements.length === 1) {
+        const newElements = [selectedElements[0], element];
+        setSelectedElements([]);
+
+        await combineElements(newElements);
       } else {
-        setSelectedElements((prev) => [...prev, element]);
+        setSelectedElements([element]);
       }
+    }
+  };
+
+  const handleDragStart = (element: string) => {
+    setDraggedElement(element);
+  };
+
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault(); // Allow the drop
+  };
+
+  const handleDrop = async (targetElement: string) => {
+    if (draggedElement && draggedElement !== targetElement) {
+      const newElements = [draggedElement, targetElement];
+      setDraggedElement(null);
+
+      await combineElements(newElements);
+    }
+  };
+
+  const combineElements = async (selectedElements: string[]) => {
+    try {
+      const response = await axios.get(
+        `/api/combine?element1=${selectedElements[0]}&element2=${selectedElements[1]}`
+      );
+
+      const newElement = response.data;
+
+      if (!newElement) {
+        setError(true);
+        setTimeout(() => setError(false), 3000);
+        return;
+      }
+
+      const exists = elements.some((el) => el.name === newElement.name);
+      if (!exists) {
+        setElements((prev) => [
+          ...prev,
+          { name: newElement.name, emoji: newElement.emoji, isNew: true },
+        ]);
+        setElementList((prev) => [
+          ...prev,
+          { name: newElement.name, emoji: newElement.emoji, isNew: true },
+        ]);
+
+        if (popSound.current) {
+          popSound.current.play();
+        }
+
+        localStorage.setItem(
+          "elements",
+          JSON.stringify([
+            ...elements,
+            { name: newElement.name, emoji: newElement.emoji },
+          ])
+        );
+
+        setTimeout(() => {
+          setElements((prev) =>
+            prev.map((el) =>
+              el.name === newElement.name ? { ...el, isNew: false } : el
+            )
+          );
+          setElementList((prev) =>
+            prev.map((el) =>
+              el.name === newElement.name ? { ...el, isNew: false } : el
+            )
+          );
+        }, 3000);
+      }
+
+      setSelectedElements([]);
+    } catch (error) {
+      console.error("Error combining elements:", error);
+      setError(true);
+      setTimeout(() => setError(false), 3000);
     }
   };
 
   const toggleDeleteMode = () => {
     if (deleteMode) {
-      // Confirm deletion: Remove marked cards from both elementList and elements
       const remainingElements = elementList.filter(
         (el) => !markedForDeletion.includes(el.name)
       );
@@ -41,83 +119,21 @@ const ElementList = () => {
         (el) => !markedForDeletion.includes(el.name)
       );
 
-      setElementList(remainingElements); // Update ElementList
-      setElements(remainingSidebarElements); // Update Sidebar
-      setMarkedForDeletion([]); // Clear marked cards
+      setElementList(remainingElements);
+      setElements(remainingSidebarElements);
+      setMarkedForDeletion([]);
     }
     setDeleteMode(!deleteMode);
   };
 
   const deleteCraftCards = () => {
-    setElementList([]); // Clear all ElementList cards
-    // Sidebar cards are not affected
+    setElementList([]);
   };
 
   const clearElements = () => {
-    setElements(Elements); // Reset Sidebar elements
-    setElementList(Elements); // Reset ElementList
+    setElements(Elements);
+    setElementList(Elements);
     localStorage.setItem("elements", JSON.stringify(Elements));
-  };
-
-  const createElement = async () => {
-    if (selectedElements.length === 2) {
-      try {
-        const response = await axios.get(
-          `/api/combine?element1=${selectedElements[0]}&element2=${selectedElements[1]}`
-        );
-
-        const newElement = response.data;
-
-        if (!newElement) {
-          setError(true);
-          setTimeout(() => setError(false), 3000);
-          return;
-        }
-
-        const exists = elements.some((el) => el.name === newElement.name);
-        if (!exists) {
-          setElements((prev) => [
-            ...prev,
-            { name: newElement.name, emoji: newElement.emoji, isNew: true },
-          ]);
-          setElementList((prev) => [
-            ...prev,
-            { name: newElement.name, emoji: newElement.emoji, isNew: true },
-          ]);
-
-          if (popSound.current) {
-            popSound.current.play();
-          }
-
-          localStorage.setItem(
-            "elements",
-            JSON.stringify([
-              ...elements,
-              { name: newElement.name, emoji: newElement.emoji },
-            ])
-          );
-
-          setTimeout(() => {
-            setElements((prev) =>
-              prev.map((el) =>
-                el.name === newElement.name ? { ...el, isNew: false } : el
-              )
-            );
-            setElementList((prev) =>
-              prev.map((el) =>
-                el.name === newElement.name ? { ...el, isNew: false } : el
-              )
-            );
-          }, 3000);
-        }
-
-        setTimeout(() => setSelectedElements([]), 300);
-      } catch (error) {
-        console.error("Error combining elements:", error);
-        setError(true);
-        setTimeout(() => setError(false), 3000);
-      }
-    }
   };
 
   useEffect(() => {
@@ -128,13 +144,8 @@ const ElementList = () => {
     }
   }, []);
 
-  useEffect(() => {
-    createElement();
-  }, [selectedElements]);
-
   return (
-    <div className="relative min-w-screen min-h-screen pb-20 lg:pb-0">
-      {/* Add `pb-20` to provide space for the sidebar in mobile mode */}
+    <div className="relative min-w-screen min-h-screen">
       <audio ref={popSound} src="/coin-flip-88793.mp3" preload="auto"></audio>
 
       <div className="flex">
@@ -146,17 +157,20 @@ const ElementList = () => {
               className={twMerge(
                 "relative bg-white shadow-md border border-gray-300 rounded-md p-3 gap-2 flex items-center justify-center cursor-pointer group transition duration-300 ease-in-out",
                 deleteMode && markedForDeletion.includes(element.name)
-                  ? "opacity-50 bg-red-100" // Highlight marked cards in delete mode
+                  ? "opacity-50 bg-red-100"
                   : ""
               )}
+              draggable
+              onDragStart={() => handleDragStart(element.name)}
+              onDragOver={handleDragOver}
+              onDrop={() => handleDrop(element.name)}
               onClick={() => handleClick(element.name)}
             >
-              {/* Delete Button */}
               {deleteMode && (
                 <button
                   className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 z-20 hover:bg-red-600 transition"
                   onClick={(e) => {
-                    e.stopPropagation(); // Prevent click event propagation
+                    e.stopPropagation();
                     handleClick(element.name);
                   }}
                 >
@@ -164,10 +178,8 @@ const ElementList = () => {
                 </button>
               )}
 
-              {/* Hover Gradient Effect */}
               <div className="absolute bottom-0 left-0 w-full h-0 bg-gradient-to-t from-blue-400 to-transparent transition-all duration-300 ease-in-out group-hover:h-full z-[-1] pointer-events-none rounded-md"></div>
 
-              {/* Content */}
               <span className="text-xl font-medium relative z-10">
                 {element.emoji}
               </span>
@@ -187,17 +199,14 @@ const ElementList = () => {
         />
       </div>
 
-      {/* Buttons */}
-      <div className="absolute bottom-4 left-4 flex gap-4">
-        {/* Reset Button */}
+      {/* Sticky Footer Overlay */}
+      <div className="fixed bottom-0 left-0 w-full bg-white shadow-md py-3 px-4 flex gap-4 justify-between items-center z-50">
         <button
           className="btn btn-ghost bg-gray-200 px-4 py-2 rounded shadow hover:bg-gray-300"
           onClick={clearElements}
         >
           Reset
         </button>
-
-        {/* Delete Mode Toggle */}
         <button
           className={`btn px-4 py-2 rounded shadow ${
             deleteMode
@@ -208,17 +217,36 @@ const ElementList = () => {
         >
           {deleteMode ? "Confirm Delete" : "Delete"}
         </button>
-
-        {/* Delete Craft Button */}
         <button
           className="btn bg-red-500 text-white hover:bg-red-600 px-4 py-2 rounded shadow"
           onClick={deleteCraftCards}
         >
           Delete Craft
         </button>
+        <button
+          className="btn bg-green-500 text-white hover:bg-green-600 px-4 py-2 rounded shadow"
+          onClick={() => setShowAboutModal(true)}
+        >
+          About
+        </button>
       </div>
 
-      {/* Error Notification */}
+      {/* About Modal */}
+      {showAboutModal && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md text-center">
+            <h2 className="text-2xl font-bold mb-4">About</h2>
+            <p className="text-gray-700 mb-4">Created by WebTreta</p>
+            <button
+              className="btn bg-blue-500 text-white px-4 py-2 rounded shadow hover:bg-blue-600"
+              onClick={() => setShowAboutModal(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
       {error && (
         <div
           role="alert"
