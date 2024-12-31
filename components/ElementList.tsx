@@ -34,6 +34,19 @@ const ElementList = () => {
     }
   };
 
+  const handleSidebarClick = (elementName: string) => {
+    const clickedElement = elements.find((el) => el.name === elementName);
+
+    if (clickedElement) {
+      setElementList((prev) => {
+        if (!prev.some((el) => el.name === elementName)) {
+          return [...prev, clickedElement]; // Add the clicked element to elementList
+        }
+        return prev; // Element already exists in elementList
+      });
+    }
+  };
+
   const handleDragStart = (element: string) => {
     setDraggedElement(element);
   };
@@ -188,7 +201,7 @@ const ElementList = () => {
           elements={elements}
           deleteMode={deleteMode}
           markedForDeletion={markedForDeletion}
-          handleClick={handleClick}
+          handleClick={handleSidebarClick}
         />
       </div>
 
