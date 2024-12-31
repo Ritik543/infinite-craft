@@ -51,11 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const handleElementClick = (elementName: string) => {
-    handleClick(elementName);
-  };
-
-  const handleDragStart = (elementName: string) => {
-    handleClick(elementName); // Select the element for drag-and-drop
+    handleClick(elementName); // Call the parent-provided function to add the card to elementList
   };
 
   return (
@@ -80,9 +76,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     ? "opacity-50 bg-red-100" // Highlight marked cards in delete mode
                     : ""
                 }`}
-                draggable
                 onClick={() => handleElementClick(element.name)}
-                onDragStart={() => handleDragStart(element.name)}
               >
                 {deleteMode && (
                   <button
